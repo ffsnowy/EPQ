@@ -11,10 +11,27 @@ load_dotenv()
 st.set_page_config(page_title="EchoMood")
 
 # Configure Spotify API
+def get_setting(name):
+    value = os.getenv(name)
+    if not value:
+        try:
+            value = st.secrets[name]
+        except Exception:
+            value = None
+    return value
+
+client_id = get_setting('CLIENT_ID')
+client_secret = get_setting('CLIENT_SECRET')
+redirect_uri = get_setting('REDIRECT_URI')
+
+if not (client_id and client_secret and redirect_uri):
+    st.error("Missing Spotify settings. Add CLIENT_ID, CLIENT_SECRET and REDIRECT_URI under Manage app > Settings > Secrets.")
+    st.stop()
+
 sp_oauth = SpotifyOAuth(
-    client_id=os.getenv('62c1119293624b97982805abbf36c007'),
-    client_secret=os.getenv('7a4aff13ba244a7f8ab70ab4c525b568'),
-    redirect_uri=os.getenv('https://echomoodalpha.streamlit.app'),
+    client_id=client_id,
+    client_secret=client_secret,
+    redirect_uri=redirect_uri,
     scope="user-top-read user-library-read playlist-modify-public",
     cache_handler=MemoryCacheHandler()
 )
