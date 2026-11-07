@@ -12,9 +12,9 @@ st.set_page_config(page_title="EchoMood")
 
 # Configure Spotify API
 sp_oauth = SpotifyOAuth(
-    client_id=os.getenv('CLIENT_ID'),
-    client_secret=os.getenv('CLIENT_SECRET'),
-    redirect_uri=os.getenv('REDIRECT_URI'),
+    client_id=os.getenv('62c1119293624b97982805abbf36c007'),
+    client_secret=os.getenv('7a4aff13ba244a7f8ab70ab4c525b568'),
+    redirect_uri=os.getenv('https://echomoodalpha.streamlit.app'),
     scope="user-top-read user-library-read playlist-modify-public",
     cache_handler=MemoryCacheHandler()
 )
