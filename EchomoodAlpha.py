@@ -1,46 +1,47 @@
-from flask import Flask, request, redirect, session, jsonify
+import streamlit as st
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
+from spotipy.cache_handler import MemoryCacheHandler
 import os
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
-app = Flask(__name__)
-app.secret_key = os.urandom(24)
+st.set_page_config(page_title="EchoMood")
 
 # Configure Spotify API
 sp_oauth = SpotifyOAuth(
     client_id=os.getenv('CLIENT_ID'),
     client_secret=os.getenv('CLIENT_SECRET'),
     redirect_uri=os.getenv('REDIRECT_URI'),
-    scope="user-top-read user-library-read playlist-modify-public"
+    scope="user-top-read user-library-read playlist-modify-public",
+    cache_handler=MemoryCacheHandler()
 )
 
-@app.route('/')
-def home():
-    return '<a href="/login">Log in with Spotify</a>'
+st.title("EchoMood")
 
-@app.route('/login')
-def login():
-    return redirect(sp_oauth.get_authorize_url())
+# Step 1: Spotify sends the user back here with ?code=... in the URL
+if "token_info" not in st.session_state and "code" in st.query_params:
+    code = st.query_params["code"]
+    try:
+        st.session_state["token_info"] = sp_oauth.get_access_token(code, check_cache=False)
+    except Exception as e:
+        st.error(f"Login failed: {e}")
+    st.query_params.clear()
+    st.rerun()
 
-@app.route('/callback')
-def callback():
-    code = request.args.get('code')
-    token_info = sp_oauth.get_access_token(code)
-    session['token_info'] = token_info
-    return redirect('/dashboard')
+# Step 2: Not logged in, so show the login button
+if "token_info" not in st.session_state:
+    st.link_button("Log in with Spotify", sp_oauth.get_authorize_url())
+    st.stop()
 
-@app.route('/dashboard')
-def dashboard():
-    token_info = session.get('token_info', None)
-    if not token_info:
-        return redirect('/login')
-    sp = spotipy.Spotify(auth=token_info['access_token'])
-    user_data = sp.current_user()
-    return jsonify(user_data)
+# Step 3: Logged in, so show the dashboard
+sp = spotipy.Spotify(auth=st.session_state["token_info"]["access_token"])
+user_data = sp.current_user()
+st.subheader(f"Welcome, {user_data['display_name']}")
+st.json(user_data)
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if st.button("Log out"):
+    del st.session_state["token_info"]
+    st.rerun()
